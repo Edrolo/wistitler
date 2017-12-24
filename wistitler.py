@@ -174,7 +174,13 @@ def subtitle_wistia_video(wistia_hashed_id, replace=False, s=session):
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description=(
+            "A tool for automatically generating and adding captions "
+            "to Wistia videos and projects. "
+            "Make sure you have `WISTIA_API_PASSWORD` set in your environment."
+         ),
+    )
     parser.add_argument(
         '-d', '--debug',
         help='Print lots of debugging statements',
