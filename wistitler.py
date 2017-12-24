@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 from __future__ import (
     absolute_import,
     print_function,
@@ -16,7 +16,8 @@ from time import time
 
 import requests
 
-logger = logging.getLogger(__name__)
+module = sys.modules['__main__'].__file__
+logger = logging.getLogger(module)
 
 WISTIA_API_PASSWORD = environ.get('WISTIA_API_PASSWORD')
 
@@ -174,12 +175,47 @@ def subtitle_wistia_video(wistia_hashed_id, replace=False, s=session):
 
 
 def main():
+    try:
+        args = parse_arguments()
+
+        video_hashed_id = args.video
+        project_hashed_id = args.project
+        list_projects = args.list_projects
+        replace = args.replace
+
+        logging.basicConfig(
+            level=args.loglevel,
+            format="%(asctime)s %(name)s %(levelname)s %(message)s",
+        )
+
+        if list_projects:
+            projects = list_all_projects()
+            # relevant_projects = [
+            #     project for project in projects
+            #     if project['hashedId'] == hashed_id
+            # ]
+            for index, project in enumerate(sorted(projects)):
+                print('{}. {hashedId}: {name}'.format(index, **project))
+
+        elif project_hashed_id:
+            caption_project(project_hashed_id, replace=replace)
+
+        elif video_hashed_id:
+            subtitle_wistia_video(video_hashed_id, replace=replace)
+
+    except KeyboardInterrupt:
+        logger.error('Program interrupted!')
+    finally:
+        logging.shutdown()
+
+
+def parse_arguments():
     parser = argparse.ArgumentParser(
         description=(
             "A tool for automatically generating and adding captions "
             "to Wistia videos and projects. "
             "Make sure you have `WISTIA_API_PASSWORD` set in your environment."
-         ),
+        ),
     )
     parser.add_argument(
         '-d', '--debug',
@@ -192,56 +228,27 @@ def main():
         help='Be verbose',
         action='store_const', dest='loglevel', const=logging.INFO,
     )
-
     parser.add_argument(
         '-r', '--replace',
         help='Replace existing captions if present',
         action='store_true',
     )
-
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument(
         '-v', '--video',
         help='Hashed ID of video to caption',
     )
-
     group.add_argument(
         '-p', '--project',
         help='Caption all videos in project with given hashed_id',
     )
-
     group.add_argument(
         '-l', '--list-projects',
         help='Print a list of all projects in your Wistia account',
         action='store_true',
     )
-
     args = parser.parse_args()
-
-    video_hashed_id = args.video
-    project_hashed_id = args.project
-    list_projects = args.list_projects
-    replace = args.replace
-
-    logging.basicConfig(
-        level=args.loglevel,
-        format="%(asctime)s %(levelname)s %(message)s",
-    )
-
-    if list_projects:
-        projects = list_all_projects()
-        # relevant_projects = [
-        #     project for project in projects
-        #     if project['hashedId'] == hashed_id
-        # ]
-        for index, project in enumerate(sorted(projects)):
-            print('{}. {hashedId}: {name}'.format(index, **project))
-
-    elif project_hashed_id:
-        caption_project(project_hashed_id, replace=replace)
-
-    elif video_hashed_id:
-        subtitle_wistia_video(video_hashed_id, replace=replace)
+    return args
 
 
 if __name__ == '__main__':
