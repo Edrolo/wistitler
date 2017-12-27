@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 from __future__ import (
     absolute_import,
     print_function,
@@ -15,6 +15,7 @@ from functools import wraps
 from os import environ
 from subprocess import check_output
 from time import time
+from six.moves import urllib
 
 import requests
 
@@ -122,14 +123,14 @@ def find_smallest_video_asset_url(wistia_hashed_id, s=session):
 
 
 def download_file(file_url):
-    filename, headers = urllib.urlretrieve(file_url)
+    filename, headers = urllib.request.urlretrieve(file_url)
     return filename
 
 
 def autosub_video_file(video_file_name):
     command = ['autosub', video_file_name]
     output = check_output(command)
-    last_line = output.splitlines()[-1]
+    last_line = output.splitlines()[-1].decode()
     prefix = 'Subtitles file created at '
     if last_line.startswith(prefix):
         srt_file_name = last_line[len(prefix):]
