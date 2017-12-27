@@ -7,8 +7,10 @@ from __future__ import (
 
 import argparse
 import logging
+import multiprocessing
 import sys
 import urllib
+from contextlib import contextmanager
 from functools import wraps
 from os import environ
 from subprocess import check_output
@@ -23,6 +25,15 @@ WISTIA_API_PASSWORD = environ.get('WISTIA_API_PASSWORD')
 
 session = requests.Session()
 session.auth = ('api', WISTIA_API_PASSWORD)
+
+
+@contextmanager
+def terminating(thing):
+    """Allow multiprocessing.Pool() to be used as a context manager in Python 2"""
+    try:
+        yield thing
+    finally:
+        thing.terminate()
 
 
 def timing(f):
@@ -68,13 +79,28 @@ def show_project(project_hashed_id, s=session):
 
 
 @timing
-def caption_project(project_hashed_id, replace=False):
+def caption_project(project_hashed_id, replace=False, s=session):
     project_data = show_project(project_hashed_id)
     logger.info('"{name}" [{hashedId}] has {mediaCount} media'.format(**project_data))
     logger.info("Gonna captch 'em all!")
     media_list = project_data['medias']
-    for media_item in media_list:
-        subtitle_wistia_video(media_item['hashed_id'], replace=replace)
+
+    concurrency = 10
+    with terminating(multiprocessing.Pool(processes=concurrency)) as pool:
+        results = [
+            pool.apply_async(
+                subtitle_wistia_video,
+                kwds=dict(
+                    wistia_hashed_id=media_item['hashed_id'],
+                    replace=replace,
+                    s=s,
+                ),
+            )
+            for media_item in media_list
+        ]
+        completed_subtitles = [p.get() for p in results]
+
+    return completed_subtitles
 
 
 def find_smallest_video_asset_url(wistia_hashed_id, s=session):
