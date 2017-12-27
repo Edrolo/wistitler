@@ -130,8 +130,11 @@ def upload_subtitle_file_to_wistia_video(
     captions_list = r.json()
     replaceable_captions = [c for c in captions_list if c['language'] == language_code]
 
+    base_url = 'https://api.wistia.com/v1'
+    url_template = '{base_url}/medias/{media_hashed_id}/captions/{language_code}.json'
     if replace and replaceable_captions:
-        detail_url = 'https://api.wistia.com/v1/medias/{media_hashed_id}/captions/{language_code}.json'.format(
+        detail_url = url_template.format(
+            base_url=base_url,
             media_hashed_id=wistia_hashed_id,
             language_code=language_code,
         )
