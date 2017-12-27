@@ -219,12 +219,8 @@ def main():
         )
 
         if list_projects:
-            projects = list_all_projects()
-            # relevant_projects = [
-            #     project for project in projects
-            #     if project['hashedId'] == hashed_id
-            # ]
-            for index, project in enumerate(sorted(projects)):
+            projects = sorted(list_all_projects(), key=lambda p: p['name'])
+            for index, project in enumerate(projects):
                 print('{}. {hashedId}: {name}'.format(index, **project))
 
         elif project_hashed_id:
