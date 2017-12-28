@@ -105,21 +105,23 @@ def caption_project(project_hashed_id, replace=False, s=session):
 
 
 def find_smallest_video_asset_url(wistia_hashed_id, s=session):
-    url = 'https://api.wistia.com/v1/medias/{media_hashed_id}.json'.format(
-        media_hashed_id=wistia_hashed_id,
-    )
-    r = s.get(url)
-    # p(vars(r))
-    if not r.ok:
-        r.raise_for_status()
-
-    media_data = r.json()
-    # p(media_data)
+    media_data = show_media(wistia_hashed_id, s=s)
     assets = media_data['assets']
     video_assets = [a for a in assets if a['contentType'] == 'video/mp4']
     smallest_video = sorted(video_assets, key=lambda v: v['fileSize'])[0]
     video_file_url = smallest_video['url'] + '.mp4'  # Append extension
     return video_file_url
+
+
+def show_media(wistia_hashed_id, s=session):
+    url = 'https://api.wistia.com/v1/medias/{media_hashed_id}.json'.format(
+        media_hashed_id=wistia_hashed_id,
+    )
+    r = s.get(url)
+    if not r.ok:
+        r.raise_for_status()
+    media_data = r.json()
+    return media_data
 
 
 def download_file(file_url):
@@ -202,6 +204,8 @@ def subtitle_wistia_video(wistia_hashed_id, replace=False, s=session):
 
     logger.info('Done!')
     logger.info('Check out the subtitles at: {}'.format(video_url))
+
+    return video_url
 
 
 def main():
