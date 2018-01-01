@@ -19,8 +19,7 @@ from six.moves import urllib
 
 import requests
 
-module = sys.modules['__main__'].__file__
-logger = logging.getLogger(module)
+logger = logging.getLogger(__name__)
 
 WISTIA_API_PASSWORD = environ.get('WISTIA_API_PASSWORD')
 
