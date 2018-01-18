@@ -13,11 +13,12 @@ import urllib
 from contextlib import contextmanager
 from functools import wraps
 from os import environ
-from subprocess import check_output
 from time import time
-from six.moves import urllib
 
 import requests
+from six.moves import urllib
+
+import autosub
 
 logger = logging.getLogger(__name__)
 
@@ -129,15 +130,8 @@ def download_file(file_url):
 
 
 def autosub_video_file(video_file_name):
-    command = ['autosub', video_file_name]
-    output = check_output(command)
-    last_line = output.splitlines()[-1].decode()
-    prefix = 'Subtitles file created at '
-    if last_line.startswith(prefix):
-        srt_file_name = last_line[len(prefix):]
-        return srt_file_name
-    else:
-        raise RuntimeError('Strange output from autosub: "{}"'.format(output))
+    srt_file_name = autosub.generate_subtitles(source_path=video_file_name)
+    return srt_file_name
 
 
 def upload_subtitle_file_to_wistia_video(
