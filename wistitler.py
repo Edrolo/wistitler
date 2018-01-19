@@ -168,12 +168,22 @@ def upload_subtitle_file_to_wistia_video(
         r.raise_for_status()
 
 
+def get_media_url(media_hashed_id):
+    return 'https://my.wistia.com/medias/{media_hashed_id}'.format(
+        media_hashed_id=media_hashed_id,
+    )
+
+
+def get_project_url(project_hashed_id):
+    return 'https://my.wistia.com/projects/{project_hashed_id}'.format(
+        project_hashed_id=project_hashed_id,
+    )
+
+
 @timing
 def subtitle_wistia_video(wistia_hashed_id, replace=False, s=session):
     logger.info('Wistia hashed id: {}'.format(wistia_hashed_id))
-    video_url = 'https://my.wistia.com/medias/{wistia_hashed_id}'.format(
-        wistia_hashed_id=wistia_hashed_id,
-    )
+    video_url = get_media_url(wistia_hashed_id)
 
     logger.info('Fetching video info')
     video_file_url = find_smallest_video_asset_url(wistia_hashed_id, s=s)
