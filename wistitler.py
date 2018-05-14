@@ -130,7 +130,7 @@ def download_file(file_url):
 
 
 def autosub_video_file(video_file_name):
-    srt_file_name = autosub.generate_subtitles(source_path=video_file_name)
+    srt_file_name = autosub.generate_subtitle_file(source_path=video_file_name)
     return srt_file_name
 
 
