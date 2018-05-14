@@ -129,10 +129,10 @@ def download_file(file_url):
     return filename
 
 
-def autosub_video_file(video_file_name):
+def autosub_video_file(video_file_name, **extra_options):
     srt_file_name = autosub.generate_subtitle_file(
         source_path=video_file_name,
-        recognizer='google_cloud_speech',
+        **extra_options
     )
     return srt_file_name
 
@@ -184,7 +184,7 @@ def get_project_url(project_hashed_id):
 
 
 @timing
-def subtitle_wistia_video(wistia_hashed_id, replace=False, s=session):
+def subtitle_wistia_video(wistia_hashed_id, replace=False, s=session, **kwargs):
     logger.info('Wistia hashed id: {}'.format(wistia_hashed_id))
     video_url = get_media_url(wistia_hashed_id)
 
@@ -197,7 +197,7 @@ def subtitle_wistia_video(wistia_hashed_id, replace=False, s=session):
     logger.debug('Downloaded file to {}'.format(video_file_name))
 
     logger.info('Feeding video to autosub')
-    subtitle_file_name = autosub_video_file(video_file_name)
+    subtitle_file_name = autosub_video_file(video_file_name, **kwargs)
     logger.info('Generated subtitle file: {}'.format(subtitle_file_name))
 
     logger.info('Uploading subtitle file to wistia')
