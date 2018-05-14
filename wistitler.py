@@ -130,7 +130,10 @@ def download_file(file_url):
 
 
 def autosub_video_file(video_file_name):
-    srt_file_name = autosub.generate_subtitle_file(source_path=video_file_name)
+    srt_file_name = autosub.generate_subtitle_file(
+        source_path=video_file_name,
+        recognizer='google_cloud_speech',
+    )
     return srt_file_name
 
 
