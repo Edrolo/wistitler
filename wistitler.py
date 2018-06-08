@@ -114,14 +114,60 @@ def find_smallest_video_asset_url(wistia_hashed_id, s=session):
 
 
 def show_media(wistia_hashed_id, s=session):
-    url = 'https://api.wistia.com/v1/medias/{media_hashed_id}.json'.format(
-        media_hashed_id=wistia_hashed_id,
-    )
+    url = f'https://api.wistia.com/v1/medias/{wistia_hashed_id}.json'
     r = s.get(url)
     if not r.ok:
         r.raise_for_status()
     media_data = r.json()
     return media_data
+
+
+def show_media_customizations(wistia_hashed_id, s=session):
+    # https://wistia.com/support/developers/data-api#customizations_show
+    url = f'https://api.wistia.com/v1/medias/{wistia_hashed_id}/customizations.json'
+    r = s.get(url)
+    if not r.ok:
+        r.raise_for_status()
+    media_customizations_data = r.json()
+    return media_customizations_data
+
+
+def enable_captions_for_media(wistia_hashed_id: str, enabled: bool=True, s=session) -> dict:
+    # https://wistia.com/support/developers/data-api#customizations_update
+    url = f'https://api.wistia.com/v1/medias/{wistia_hashed_id}/customizations.json'
+    if enabled:
+        payload = {'plugin': {'captions-v1': {'onByDefault': False}}}
+    else:
+        payload = {'plugin': {'captions-v1': None}}
+    r = s.put(url, json=payload)
+    if not r.ok:
+        r.raise_for_status()
+    media_customizations_data = r.json()
+    return media_customizations_data
+
+
+def enable_captions_for_project(project_hashed_id: str, enabled: bool=True, s=session):
+    project_data = show_project(project_hashed_id)
+    logger.info('"{name}" [{hashedId}] has {mediaCount} media'.format(**project_data))
+    logger.info(f'{"En" if enabled else "Dis"}abling captions...')
+    media_list = project_data['medias']
+
+    concurrency = 10
+    with terminating(multiprocessing.Pool(processes=concurrency)) as pool:
+        results = [
+            pool.apply_async(
+                enable_captions_for_media,
+                kwds=dict(
+                    wistia_hashed_id=media_item['hashed_id'],
+                    enabled=enabled,
+                    s=s,
+                ),
+            )
+            for media_item in media_list
+        ]
+        modified_media_customizations = [p.get() for p in results]
+
+    return modified_media_customizations
 
 
 def download_file(file_url):
@@ -222,6 +268,8 @@ def main():
         project_hashed_id = args.project
         list_projects = args.list_projects
         replace = args.replace
+        toggle_captions = bool(args.toggle_captions)
+        set_captions_to = args.toggle_captions.lower() == 'on'
 
         logging.basicConfig(
             level=args.loglevel,
@@ -234,10 +282,16 @@ def main():
                 print('{}. {hashedId}: {name}'.format(index, **project))
 
         elif project_hashed_id:
-            caption_project(project_hashed_id, replace=replace)
+            if toggle_captions:
+                enable_captions_for_project(project_hashed_id, enabled=set_captions_to)
+            else:
+                caption_project(project_hashed_id, replace=replace)
 
         elif video_hashed_id:
-            subtitle_wistia_video(video_hashed_id, replace=replace)
+            if toggle_captions:
+                enable_captions_for_media(video_hashed_id, enabled=set_captions_to)
+            else:
+                subtitle_wistia_video(video_hashed_id, replace=replace)
 
     except KeyboardInterrupt:
         logger.error('Program interrupted!')
@@ -268,6 +322,14 @@ def parse_arguments():
         '-r', '--replace',
         help='Replace existing captions if present',
         action='store_true',
+    )
+    parser.add_argument(
+        '-t', '--toggle-captions',
+        type=str,
+        choices=('on', 'off', 'ON', 'OFF'),
+        default='',
+        help='Turn captions on or off',
+        action='store',
     )
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument(
