@@ -235,6 +235,7 @@ def subtitle_wistia_video(wistia_hashed_id, replace=False, s=session, **kwargs):
     video_url = get_media_url(wistia_hashed_id)
 
     logger.info('Fetching video info')
+    # Can raise requests.exceptions.HTTPError (503)
     video_file_url = find_smallest_video_asset_url(wistia_hashed_id, s=s)
     logger.debug('Found smallest video asset url: {}'.format(video_file_url))
 
@@ -243,9 +244,11 @@ def subtitle_wistia_video(wistia_hashed_id, replace=False, s=session, **kwargs):
     logger.debug('Downloaded file to {}'.format(video_file_name))
 
     logger.info('Feeding video to autosub')
+    # Can raise google.api_core.exceptions.ResourceExhausted (429)
     subtitle_file_name = autosub_video_file(video_file_name, **kwargs)
     logger.info('Generated subtitle file: {}'.format(subtitle_file_name))
 
+    # Can raise requests.exceptions.HTTPError (503)
     logger.info('Uploading subtitle file to wistia')
     upload_subtitle_file_to_wistia_video(
         wistia_hashed_id,
