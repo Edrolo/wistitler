@@ -132,7 +132,7 @@ def show_media_customizations(wistia_hashed_id, s=session):
     return media_customizations_data
 
 
-def enable_captions_for_media(wistia_hashed_id: str, enabled: bool=True, s=session) -> dict:
+def enable_captions_for_media(wistia_hashed_id: str, enabled: bool = True, s=session) -> dict:
     # https://wistia.com/support/developers/data-api#customizations_update
     url = f'https://api.wistia.com/v1/medias/{wistia_hashed_id}/customizations.json'
     if enabled:
@@ -146,7 +146,7 @@ def enable_captions_for_media(wistia_hashed_id: str, enabled: bool=True, s=sessi
     return media_customizations_data
 
 
-def enable_captions_for_project(project_hashed_id: str, enabled: bool=True, s=session):
+def enable_captions_for_project(project_hashed_id: str, enabled: bool = True, s=session):
     project_data = show_project(project_hashed_id)
     logger.info('"{name}" [{hashedId}] has {mediaCount} media'.format(**project_data))
     logger.info(f'{"En" if enabled else "Dis"}abling captions...')
