@@ -170,6 +170,22 @@ def enable_captions_for_project(project_hashed_id: str, enabled: bool=True, s=se
     return modified_media_customizations
 
 
+def list_captions(wistia_hashed_id: str, s=session):
+    url = f'https://api.wistia.com/v1/medias/{wistia_hashed_id}/captions.json'
+    r = s.get(url)
+    if not r.ok:
+        r.raise_for_status()
+    caption_list = r.json()
+    return caption_list
+
+
+def delete_captions(wistia_hashed_id: str, language_code: str = 'eng', s=session):
+    url = f'https://api.wistia.com/v1/medias/{wistia_hashed_id}/captions/{language_code}.json'
+    r = s.delete(url)
+    if not r.ok:
+        r.raise_for_status()
+
+
 def download_file(file_url):
     filename, headers = urllib.request.urlretrieve(file_url)
     return filename
