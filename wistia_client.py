@@ -2,7 +2,8 @@ from os import environ
 
 import requests
 
-from wistitler import logger
+import logging
+logger = logging.getLogger(__name__)
 
 
 class WistiaClient:
