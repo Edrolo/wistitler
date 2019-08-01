@@ -40,8 +40,7 @@ class WistiaClient:
     def show_media(self, wistia_hashed_id: str):
         url = f'https://api.wistia.com/v1/medias/{wistia_hashed_id}.json'
         r = self.session.get(url)
-        if not r.ok:
-            r.raise_for_status()
+        r.raise_for_status()
         media_data = r.json()
         return media_data
 
@@ -49,16 +48,14 @@ class WistiaClient:
         # https://wistia.com/support/developers/data-api#customizations_show
         url = f'https://api.wistia.com/v1/medias/{wistia_hashed_id}/customizations.json'
         r = self.session.get(url)
-        if not r.ok:
-            r.raise_for_status()
+        r.raise_for_status()
         media_customizations_data = r.json()
         return media_customizations_data
 
     def list_captions(self, wistia_hashed_id: str):
         url = f'https://api.wistia.com/v1/medias/{wistia_hashed_id}/captions.json'
         r = self.session.get(url)
-        if not r.ok:
-            r.raise_for_status()
+        r.raise_for_status()
         caption_list = r.json()
         return caption_list
 
@@ -69,8 +66,7 @@ class WistiaClient:
     ):
         url = f'https://api.wistia.com/v1/medias/{wistia_hashed_id}/captions/{language_code}.json'
         r = self.session.delete(url)
-        if not r.ok:
-            r.raise_for_status()
+        r.raise_for_status()
 
     def order_captions(self, wistia_hashed_id: str):
         url_from_docs = 'https://api.wistia.com/v1/medias/{media_hashed_id}/captions/purchase.json'
@@ -95,8 +91,7 @@ class WistiaClient:
         else:
             payload = {'plugin': {'captions-v1': None}}
         r = self.session.put(url, json=payload)
-        if not r.ok:
-            r.raise_for_status()
+        r.raise_for_status()
         media_customizations_data = r.json()
         return media_customizations_data
 
