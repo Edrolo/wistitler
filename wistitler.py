@@ -111,6 +111,17 @@ class WistiaClient:
         if not r.ok:
             r.raise_for_status()
 
+    def order_captions(self, wistia_hashed_id: str):
+        url_from_docs = 'https://api.wistia.com/v1/medias/{media_hashed_id}/captions/purchase.json'
+        url_from_UI = 'https://{account-slug}.wistia.com/medias/{media_hashed_id}/transcript.json'
+
+        base_url = 'https://api.wistia.com/v1'
+        url = f'{base_url}/medias/{wistia_hashed_id}/captions/purchase.json'
+
+        r = self.session.post(url)
+        r.raise_for_status()
+        return r
+
     def enable_captions_for_media(
             self,
             wistia_hashed_id: str,
