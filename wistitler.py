@@ -109,8 +109,7 @@ def find_smallest_video_asset_url(wistia_hashed_id, s=session):
     assets = media_data['assets']
     video_assets = [a for a in assets if a['contentType'] == 'video/mp4']
     smallest_video = sorted(video_assets, key=lambda v: v['fileSize'])[0]
-    video_file_url = smallest_video['url'] + '.mp4'  # Append extension
-    return video_file_url
+    return smallest_video['url'] + '.mp4'
 
 
 def show_media(wistia_hashed_id, s=session):
@@ -120,8 +119,7 @@ def show_media(wistia_hashed_id, s=session):
     r = s.get(url)
     if not r.ok:
         r.raise_for_status()
-    media_data = r.json()
-    return media_data
+    return r.json()
 
 
 def download_file(file_url):
@@ -130,8 +128,7 @@ def download_file(file_url):
 
 
 def autosub_video_file(video_file_name):
-    srt_file_name = autosub.generate_subtitles(source_path=video_file_name)
-    return srt_file_name
+    return autosub.generate_subtitles(source_path=video_file_name)
 
 
 def upload_subtitle_file_to_wistia_video(
@@ -152,20 +149,19 @@ def upload_subtitle_file_to_wistia_video(
     captions_list = r.json()
     replaceable_captions = [c for c in captions_list if c['language'] == language_code]
 
-    base_url = 'https://api.wistia.com/v1'
-    url_template = '{base_url}/medias/{media_hashed_id}/captions/{language_code}.json'
     if replace and replaceable_captions:
+        base_url = 'https://api.wistia.com/v1'
+        url_template = '{base_url}/medias/{media_hashed_id}/captions/{language_code}.json'
         detail_url = url_template.format(
             base_url=base_url,
             media_hashed_id=wistia_hashed_id,
             language_code=language_code,
         )
         r = s.put(detail_url, files=files)
-        r.raise_for_status()
-
     else:
         r = s.post(list_url, data=dict(language_code=language_code), files=files)
-        r.raise_for_status()
+
+    r.raise_for_status()
 
 
 def get_media_url(media_hashed_id):
@@ -280,8 +276,7 @@ def parse_arguments():
         help='Print a list of all projects in your Wistia account',
         action='store_true',
     )
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 if __name__ == '__main__':
