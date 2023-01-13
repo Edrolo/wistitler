@@ -15,12 +15,12 @@ from functools import wraps
 from time import time
 
 from six.moves import urllib
+from wistia import (
+    WistiaClient,
+    get_wistia_client,
+)
 
 import autosub
-from wistia_client import (
-    WistiaClient,
-    get_client,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -48,21 +48,23 @@ def timing(f):
 
 
 def find_smallest_video_asset_url(wistia: WistiaClient, wistia_hashed_id: str):
-    media_data = wistia.show_media(wistia_hashed_id)
-    assets = media_data['assets']
-    video_assets = [a for a in assets if a['contentType'] == 'video/mp4']
-    smallest_video = sorted(video_assets, key=lambda v: v['fileSize'])[0]
-    video_file_url = smallest_video['url'] + '.mp4'  # Append extension
-    return video_file_url
+    media = wistia.show_media(wistia_hashed_id)
+    video_assets = [a for a in media.assets if a.content_type == 'video/mp4']
+    smallest_video = sorted(video_assets, key=lambda v: v.file_size)[0]
+    return smallest_video.url
 
 
 @timing
-def caption_project(wistia: WistiaClient, project_hashed_id, replace=False):
-    project_data = wistia.show_project(project_hashed_id)
-    logger.info(
-        '"{name}" [{hashedId}] has {mediaCount} media'.format(**project_data))
+def caption_project(
+    project_hashed_id,
+    replace=False,
+    wistia: WistiaClient = None,
+):
+    wistia = wistia or get_wistia_client()
+    project = wistia.show_project(project_hashed_id)
+    logger.info(f'"{project.name}" [{project.hashed_id}] has {project.media_count} media')
     logger.info("Gonna captch 'em all!")
-    media_list = project_data['medias']
+    media_list = project.medias
 
     concurrency = 10
     with terminating(multiprocessing.Pool(processes=concurrency)) as pool:
@@ -82,15 +84,16 @@ def caption_project(wistia: WistiaClient, project_hashed_id, replace=False):
 
 
 def enable_captions_for_project(
-        wistia: WistiaClient,
-        project_hashed_id: str,
-        enabled: bool = True,
+    project_hashed_id: str,
+    enabled: bool = True,
+    wistia: WistiaClient = None,
 ):
-    project_data = wistia.show_project(project_hashed_id)
+    wistia = wistia or get_wistia_client()
+    project = wistia.show_project(project_hashed_id)
     logger.info(
-        '"{name}" [{hashedId}] has {mediaCount} media'.format(**project_data))
+        f'"{project.name}" [{project.hashed_id}] has {project.media_count} media')
     logger.info(f'{"En" if enabled else "Dis"}abling captions...')
-    media_list = project_data['medias']
+    media_list = project.medias
 
     concurrency = 10
     with terminating(multiprocessing.Pool(processes=concurrency)) as pool:
@@ -98,7 +101,7 @@ def enable_captions_for_project(
             pool.apply_async(
                 wistia.enable_captions_for_media,
                 kwds=dict(
-                    wistia_hashed_id=media_item['hashed_id'],
+                    wistia_hashed_id=media_item.hashed_id,
                     enabled=enabled,
                 ),
             ) for media_item in media_list
@@ -128,26 +131,30 @@ def get_project_url(project_hashed_id: str) -> str:
 
 
 @timing
-def subtitle_wistia_video(wistia: WistiaClient,
-                          wistia_hashed_id: str,
-                          replace=False,
-                          **kwargs, ):
-    logger.info('Wistia hashed id: {}'.format(wistia_hashed_id))
+def subtitle_wistia_video(
+    wistia_hashed_id: str,
+    replace=False,
+    wistia: WistiaClient = None,
+    **kwargs,
+):
+    wistia = wistia or get_wistia_client()
+
+    logger.info(f'Wistia hashed id: {wistia_hashed_id}')
     video_url = get_media_url(wistia_hashed_id)
 
     logger.info('Fetching video info')
     # Can raise requests.exceptions.HTTPError (503)
     video_file_url = find_smallest_video_asset_url(wistia, wistia_hashed_id)
-    logger.debug('Found smallest video asset url: {}'.format(video_file_url))
+    logger.debug(f'Found smallest video asset url: {video_file_url}')
 
     logger.info('Downloading video')
     video_file_name = download_file(video_file_url)
-    logger.debug('Downloaded file to {}'.format(video_file_name))
+    logger.debug(f'Downloaded file to {video_file_name}')
 
     logger.info('Feeding video to autosub')
     # Can raise google.api_core.exceptions.ResourceExhausted (429)
     subtitle_file_name = autosub_video_file(video_file_name, **kwargs)
-    logger.info('Generated subtitle file: {}'.format(subtitle_file_name))
+    logger.info(f'Generated subtitle file: {subtitle_file_name}')
 
     # Can raise requests.exceptions.HTTPError (503)
     logger.info('Uploading subtitle file to wistia')
@@ -158,7 +165,7 @@ def subtitle_wistia_video(wistia: WistiaClient,
     )
 
     logger.info('Done!')
-    logger.info('Check out the subtitles at: {}'.format(video_url))
+    logger.info(f'Check out the subtitles at: {video_url}')
 
     return video_url
 
@@ -174,7 +181,7 @@ def main():
         toggle_captions = bool(args.toggle_captions)
         set_captions_to = args.toggle_captions.lower() == 'on'
 
-        wistia = get_client(args.password)
+        wistia = get_wistia_client(args.password or None)
 
         logging.basicConfig(
             level=args.loglevel,
@@ -188,15 +195,13 @@ def main():
 
         elif project_hashed_id:
             if toggle_captions:
-                enable_captions_for_project(
-                    project_hashed_id, enabled=set_captions_to)
+                enable_captions_for_project(project_hashed_id, enabled=set_captions_to)
             else:
                 caption_project(project_hashed_id, replace=replace)
 
         elif video_hashed_id:
             if toggle_captions:
-                wistia.enable_captions_for_media(
-                    video_hashed_id, enabled=set_captions_to)
+                wistia.enable_captions_for_media(video_hashed_id, enabled=set_captions_to)
             else:
                 subtitle_wistia_video(video_hashed_id, replace=replace)
 

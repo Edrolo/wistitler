@@ -123,6 +123,7 @@ setup(
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=[
+        'wistiapy>=0.0.8',
         'autosub>=0.4.0b6',
         'requests',
         'six',
