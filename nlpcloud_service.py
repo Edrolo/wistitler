@@ -1,4 +1,5 @@
 from pathlib import Path
+from requests import JSONDecodeError
 
 from typing import (
     List,
@@ -104,7 +105,11 @@ def request_async_asr(*, url, nlp_client, key):
 
 @cache_as_json(filename_pattern="retrieve_async_asr_result__{key}.json")
 def retrieve_async_asr_result(*, url, nlp_client, key):
-    return nlp_client.async_result(url=url)
+    try:
+        return nlp_client.async_result(url=url)
+    except JSONDecodeError as e:
+        print(e)
+        raise
 
 
 def async_asr_for_url(*, url, nlp_client, key):
