@@ -44,18 +44,13 @@ def timing(f):
         start_time = time()
         result = f(*args, **kwargs)
         end_time = time()
-        logger.info('func:%r args:[%r, %r] took: %2.4f sec' %
-                    (f.__name__, args, kwargs, end_time - start_time))
+        logger.info(
+            "func:%r args:[%r, %r] took: %2.4f sec"
+            % (f.__name__, args, kwargs, end_time - start_time)
+        )
         return result
 
     return wrap
-
-
-def find_smallest_video_asset_url(wistia: WistiaClient, wistia_hashed_id: str):
-    media = wistia.show_media(wistia_hashed_id)
-    video_assets = [a for a in media.assets if a.content_type == 'video/mp4']
-    smallest_video = sorted(video_assets, key=lambda v: v.file_size)[0]
-    return smallest_video.url
 
 
 @timing
@@ -67,7 +62,9 @@ def caption_project(
 ):
     wistia = wistia or get_wistia_client()
     project = wistia.show_project(project_hashed_id)
-    logger.info(f'"{project.name}" [{project.hashed_id}] has {project.media_count} media')
+    logger.info(
+        f'"{project.name}" [{project.hashed_id}] has {project.media_count} media'
+    )
     logger.info("Gonna captch 'em all!")
     media_list = project.medias
 
@@ -181,13 +178,13 @@ def subtitle_wistia_video(
     wistia = wistia or get_wistia_client()
     captioning_service_func = captioning_services.get(captioning_service)
 
-    logger.info(f'Wistia hashed id: {wistia_hashed_id}')
+    logger.info(f"Wistia hashed id: {wistia_hashed_id}")
     video_url = get_media_url(wistia_hashed_id)
 
-    logger.info('Fetching video info')
+    logger.info("Fetching video info")
     # Can raise requests.exceptions.HTTPError (503)
     video_file_url = find_smallest_video_asset_url(wistia, wistia_hashed_id)
-    logger.debug(f'Found smallest video asset url: {video_file_url}')
+    logger.debug(f"Found smallest video asset url: {video_file_url}")
 
     subtitle_file_name, srt_file = captioning_service_func(
         url=video_file_url,
@@ -195,15 +192,15 @@ def subtitle_wistia_video(
     )
 
     # Can raise requests.exceptions.HTTPError (503)
-    logger.info('Uploading subtitle file to wistia')
+    logger.info("Uploading subtitle file to wistia")
     wistia.upload_subtitle_file_to_wistia_video(
         wistia_hashed_id,
         subtitle_file_name,
         replace=replace,
     )
 
-    logger.info('Done!')
-    logger.info(f'Check out the subtitles at: {video_url}')
+    logger.info("Done!")
+    logger.info(f"Check out the subtitles at: {video_url}")
 
     return video_url
 
@@ -228,24 +225,30 @@ def main():
         )
 
         if list_projects:
-            projects = sorted(wistia.list_all_projects(), key=lambda p: p['name'])
+            projects = sorted(wistia.list_all_projects(), key=lambda p: p["name"])
             for index, project in enumerate(projects):
-                print('{}. {hashedId}: {name}'.format(index, **project))
+                print("{}. {hashedId}: {name}".format(index, **project))
 
         elif project_hashed_id:
             if toggle_captions:
                 enable_captions_for_project(project_hashed_id, enabled=set_captions_to)
             else:
-                caption_project(project_hashed_id, replace=replace)
+                caption_project(
+                    project_hashed_id,
+                    replace=replace,
+                    captioning_service=captioning_service,
+                )
 
         elif video_hashed_id:
             if toggle_captions:
-                wistia.enable_captions_for_media(video_hashed_id, enabled=set_captions_to)
+                wistia.enable_captions_for_media(
+                    video_hashed_id, enabled=set_captions_to
+                )
             else:
                 subtitle_wistia_video(video_hashed_id, replace=replace)
 
     except KeyboardInterrupt:
-        logger.error('Program interrupted!')
+        logger.error("Program interrupted!")
     finally:
         logging.shutdown()
 
@@ -256,40 +259,41 @@ def parse_arguments():
             "A tool for automatically generating and adding captions "
             "to Wistia videos and projects. "
             "Make sure you have `WISTIA_API_PASSWORD` set in your environment."
-        ), )
+        ),
+    )
     parser.add_argument(
-        '-d',
-        '--debug',
-        help='Print lots of debugging statements',
-        action='store_const',
-        dest='loglevel',
+        "-d",
+        "--debug",
+        help="Print lots of debugging statements",
+        action="store_const",
+        dest="loglevel",
         const=logging.DEBUG,
         default=logging.WARN,
     )
     parser.add_argument(
-        '--verbose',
-        help='Be verbose',
-        action='store_const',
-        dest='loglevel',
+        "--verbose",
+        help="Be verbose",
+        action="store_const",
+        dest="loglevel",
         const=logging.INFO,
     )
     parser.add_argument(
-        '-r',
-        '--replace',
-        help='Replace existing captions if present',
-        action='store_true',
+        "-r",
+        "--replace",
+        help="Replace existing captions if present",
+        action="store_true",
     )
     parser.add_argument(
-        '-t',
-        '--toggle-captions',
+        "-t",
+        "--toggle-captions",
         type=str,
-        choices=('on', 'off', 'ON', 'OFF'),
-        default='',
-        help='Turn captions on or off',
-        action='store',
+        choices=("on", "off", "ON", "OFF"),
+        default="",
+        help="Turn captions on or off",
+        action="store",
     )
     parser.add_argument(
-        '--password',
+        "--password",
         type=str,
         default="",
         help="Wistia API password",
@@ -305,24 +309,24 @@ def parse_arguments():
     )
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument(
-        '-v',
-        '--video',
-        help='Hashed ID of video to caption',
+        "-v",
+        "--video",
+        help="Hashed ID of video to caption",
     )
     group.add_argument(
-        '-p',
-        '--project',
-        help='Caption all videos in project with given hashed_id',
+        "-p",
+        "--project",
+        help="Caption all videos in project with given hashed_id",
     )
     group.add_argument(
-        '-l',
-        '--list-projects',
-        help='Print a list of all projects in your Wistia account',
-        action='store_true',
+        "-l",
+        "--list-projects",
+        help="Print a list of all projects in your Wistia account",
+        action="store_true",
     )
     args = parser.parse_args()
     return args
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())
