@@ -125,6 +125,7 @@ setup(
     install_requires=[
         'wistiapy>=0.0.8',
         'autosub>=0.4.0b6',
+        'nlpcloud',
         'requests',
         'six',
     ],
